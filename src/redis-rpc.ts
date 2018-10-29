@@ -5,7 +5,7 @@ import { fromEvent, Observable } from "rxjs";
 import { filter, first, map, timeout as rxTimeout } from "rxjs/operators";
 import { generateId } from "./utils";
 
-const debug = d("RRPC");
+const debug = d("RLB:RPC");
 
 interface IPubSubMessage<T> {
   id: string;
@@ -20,7 +20,8 @@ export default class RedisPRCNode<T, U> {
   private subClient: Redis.Redis;
   private pubClient: Redis.Redis;
 
-  private subChannel?: string;
+  private channelPrefix: string;
+  private subChannel: string;
 
   private subClientMessageStream: Observable<[string, IPubSubMessage<T | U>]>;
 
@@ -38,12 +39,14 @@ export default class RedisPRCNode<T, U> {
     {
       pubClient = new Redis(redisUrl).on("error", debug),
       subClient = new Redis(redisUrl).on("error", debug),
+      poolId = "global",
     } = {},
   ) {
     this.pubClient = pubClient;
     this.subClient = subClient;
 
-    this.subChannel = `RLB:RPC:${id}`;
+    this.channelPrefix = `RLB:RPC:${poolId}`;
+    this.subChannel = `${this.channelPrefix}:${id}`;
     this.subClient.subscribe([this.subChannel, `${this.subChannel}:result`]);
     this.subClientMessageStream = fromEvent<[string, string]>(
       this.subClient,
@@ -79,7 +82,7 @@ export default class RedisPRCNode<T, U> {
     };
     debug(`call ${nodeId}:`, message);
     const recievedClientsNumber = await this.pubClient.publish(
-      `RLB:RPC:${nodeId}`,
+      `${this.channelPrefix}:${nodeId}`,
       JSON.stringify(message),
     );
     debug(`${recievedClientsNumber} clients recieved`);
@@ -112,7 +115,7 @@ export default class RedisPRCNode<T, U> {
       payload: result,
     };
     const recievedClientsNumber = await this.pubClient.publish(
-      `RLB:RPC:${caller}:result`,
+      `${this.channelPrefix}:${caller}:result`,
       JSON.stringify(responseMessage),
     );
     debug(`${recievedClientsNumber} clients recieved`);

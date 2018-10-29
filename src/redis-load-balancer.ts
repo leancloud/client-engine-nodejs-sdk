@@ -87,6 +87,7 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
       (params) => this.consumer.consume(params),
       redisUrl,
       {
+        poolId,
         pubClient: this.redis,
       },
     );
