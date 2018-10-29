@@ -1,6 +1,5 @@
 import d = require("debug");
 import * as Redis from "ioredis";
-import { bind } from "lodash-decorators";
 import { fromEvent, Observable } from "rxjs";
 import { filter, first, map, timeout as rxTimeout } from "rxjs/operators";
 import { generateId } from "./utils";
@@ -104,8 +103,7 @@ export default class RedisPRCNode<T, U> {
     ).toPromise();
   }
 
-  @bind
-  private async handleRPCCall(message: IPubSubMessage<T>) {
+  private handleRPCCall = async (message: IPubSubMessage<T>) => {
     debug("handle %O", message);
     const { caller, id, payload: params } = message;
     const result = await this.handler(params);
