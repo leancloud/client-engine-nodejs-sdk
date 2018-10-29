@@ -15,10 +15,10 @@ deploy:
     skip_cleanup: true
     on:
       tags: true
-  # - provider: npm
-  #   email: "lee55962698@gmail.com"
-  #   api_key: 
-  #     secure: "t1h8KhjsCn9bMeS3Y17JwtQKZ2lSFF/AuwkuhSM4PhXTRyrEbYSRRN8RAUX0Oae3zoAzyCu9nGVKeJppJI03cp4eZKgQVSS7vy6IoKpm0IXvICGD6eaAS0fVweYWHLK921B8itCE6mPJyvhxHovHCYHQqkpNfbY2MDNBrE2ILVqCPFHF4vOCEQ2CEe58Gx4xbLT0iVJUpv4ApoR0BqQsDumNmzD4OzuzzRbOPdOxvu3z1EIMDsOLT6+WSUDWUeO5vqEXNoWJRD2nKG1eHWnLTEZViOSxZi/iw9NXwBFfjSTMUdK+ANofkFhS95rTptAXfipUNHV357OBdR3oPFLfhh+20pFD5XSjJ8hRA7ESb3Bn8vLGB6bVgSUSN+3p0UsE162djMALoalYSsKl4zmL2fVUy6q0cdZeuP7QAICV7cE0PjFvEY1SG30nKHWlw8GBFqTm3sxiBxofTOlRUnznUdrhWJMRMijMqaoEbM1dvXSnVPhsVKNUBDw1v3pQD6rE4ruYHY9quZceDt7UQiKU2Apqd/QcWPMcboqbrR41qIQWQ1sQgQv0n5G0+fj5VD6YXb+6nac0Oo6qvXaLTgzxgExnit/p+SmMub2M9YOY23cvR/KlZGcqRCEneMm2Dil18pkSvA7kXSg4p9RdjmhtuhMUgC4YEIXYnYZQxMB5UMo="
-  #   skip_cleanup: true
-  #   on:
-  #     tags: true
+  - provider: npm
+    email: "lee55962698@gmail.com"
+    api_key: 
+      secure: "t1h8KhjsCn9bMeS3Y17JwtQKZ2lSFF/AuwkuhSM4PhXTRyrEbYSRRN8RAUX0Oae3zoAzyCu9nGVKeJppJI03cp4eZKgQVSS7vy6IoKpm0IXvICGD6eaAS0fVweYWHLK921B8itCE6mPJyvhxHovHCYHQqkpNfbY2MDNBrE2ILVqCPFHF4vOCEQ2CEe58Gx4xbLT0iVJUpv4ApoR0BqQsDumNmzD4OzuzzRbOPdOxvu3z1EIMDsOLT6+WSUDWUeO5vqEXNoWJRD2nKG1eHWnLTEZViOSxZi/iw9NXwBFfjSTMUdK+ANofkFhS95rTptAXfipUNHV357OBdR3oPFLfhh+20pFD5XSjJ8hRA7ESb3Bn8vLGB6bVgSUSN+3p0UsE162djMALoalYSsKl4zmL2fVUy6q0cdZeuP7QAICV7cE0PjFvEY1SG30nKHWlw8GBFqTm3sxiBxofTOlRUnznUdrhWJMRMijMqaoEbM1dvXSnVPhsVKNUBDw1v3pQD6rE4ruYHY9quZceDt7UQiKU2Apqd/QcWPMcboqbrR41qIQWQ1sQgQv0n5G0+fj5VD6YXb+6nac0Oo6qvXaLTgzxgExnit/p+SmMub2M9YOY23cvR/KlZGcqRCEneMm2Dil18pkSvA7kXSg4p9RdjmhtuhMUgC4YEIXYnYZQxMB5UMo="
+    skip_cleanup: true
+    on:
+      tags: true
