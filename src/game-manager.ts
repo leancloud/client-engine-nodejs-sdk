@@ -113,7 +113,7 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
     });
     masterClient.userId = id;
     return masterClient;
-  };
+  }
 
   private addGame(game: T) {
     this.games.add(game);

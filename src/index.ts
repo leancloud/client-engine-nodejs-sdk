@@ -4,5 +4,5 @@ export * from "./game";
 export * from "./automation";
 export {
   generateId,
-  listen
-} from './utils';
+  listen,
+} from "./utils";

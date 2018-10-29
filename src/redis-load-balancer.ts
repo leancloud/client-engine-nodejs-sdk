@@ -39,7 +39,6 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
   // tslint:disable-next-line:variable-name
   private _online?: boolean;
 
-
   private redis: Redis.Redis;
   private redisPrefix: string;
   private redisKey: string;
