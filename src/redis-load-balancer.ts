@@ -72,6 +72,7 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
       .on("connect", () => {
         debug(`redis connected`);
         this.online = true;
+        this.reportLoad();
       });
     this.redisPrefix = `RDB:${poolId}`;
     this.redisKey = `${this.redisPrefix}:${this.id}`;
@@ -79,7 +80,6 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
     this.reportInterval = reportInterval;
 
     consumer.on(RedisLoadBalancerConsumerEvent.LOAD_CHANGE, () => this.reportLoad());
-    this.reportLoad();
 
     this.redisPRCNode = new RedisPRCNode(
       this.id,
