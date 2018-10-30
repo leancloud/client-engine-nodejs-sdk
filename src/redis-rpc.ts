@@ -27,9 +27,8 @@ export default class RedisPRCNode<T, U> {
   /**
    * @param id 节点的唯一标识
    * @param handler 处理远程调用的方法
-   * @param redisUrl redis URL，如果不提供下面的 client 参数，会使用该 url 创建 redis client
-   * @param pubClient 用于发布消息的 redis client
-   * @param pubClient 用于订阅消息的 redis client，这个 client 会被独占，不能发送任何其他命令
+   * @param redisUrl redis URL
+   * @param pubClient 用于发布消息的 redis client，这里提供参数运行复用现在的 redis 客户端来发布消息
    */
   constructor(
     public id: string,
@@ -37,12 +36,14 @@ export default class RedisPRCNode<T, U> {
     redisUrl?: string,
     {
       pubClient = new Redis(redisUrl).on("error", debug),
-      subClient = new Redis(redisUrl).on("error", debug),
       poolId = "global",
     } = {},
   ) {
     this.pubClient = pubClient;
-    this.subClient = subClient;
+    this.subClient = new Redis(redisUrl, {
+      // 会一直重试
+      maxRetriesPerRequest: null,
+    }).on("error", debug);
 
     this.channelPrefix = `RLB:RPC:${poolId}`;
     this.subChannel = `${this.channelPrefix}:${id}`;
