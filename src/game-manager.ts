@@ -49,7 +49,7 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
     return this.games.size;
   }
 
-  public getStatus() {
+  public async getStatus() {
     return {
       availableGames: this.availableGames.map((game) => game.room.name),
       games: Array.from(this.games).map(({

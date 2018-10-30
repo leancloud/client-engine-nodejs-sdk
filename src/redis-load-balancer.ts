@@ -92,7 +92,8 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
     );
   }
 
-  public getStatus() {
+  public async getStatus() {
+    await this.fetchLoads();
     return _.pick(this, ["id", "loads", "online", "open"]);
   }
 
