@@ -79,7 +79,6 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
     this.reportInterval = reportInterval;
 
     consumer.on(RedisLoadBalancerConsumerEvent.LOAD_CHANGE, () => this.reportLoad());
-    this.fetchLoads();
     this.reportLoad();
 
     this.redisPRCNode = new RedisPRCNode(
@@ -174,20 +173,20 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
    * 向 Redis 上报本地负载
    */
   @throttle(1000)
-  private reportLoad() {
+  private async reportLoad() {
     if (!this.open) {
       return;
     }
     if (this.online) {
       const load = this.consumer.getLoad();
       debug(`report load: ${load}`);
-      this.redis.set(
+      await this.redis.set(
         this.redisKey,
         load.toString(),
         // 一个上报周期后自动过期
         "PX",
         this.reportInterval,
-      );
+      ).catch((error) => console.error(error.message));
     } else {
       debug("RLB offline. Skip reporting load");
     }
