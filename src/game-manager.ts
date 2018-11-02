@@ -87,7 +87,6 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
       game = availableGames[0];
     } else {
       debug(`No game available, creating a new one`);
-      console.log("before start", process.memoryUsage());
       game = await this.queue.add(() => this.createNewGame());
       this.addGame(game);
       game.once(GameEvent.END, () => this.remove(game));

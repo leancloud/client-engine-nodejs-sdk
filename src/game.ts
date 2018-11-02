@@ -62,7 +62,7 @@ export abstract class Game extends EventEmitter {
         this.registeredPlayers.delete(newPlayer.userId);
       }
     });
-    this.customEvents.subscribe(console.log);
+    this.customEvents.subscribe(debug);
   }
 
   public makeReservation(playerId: string) {
