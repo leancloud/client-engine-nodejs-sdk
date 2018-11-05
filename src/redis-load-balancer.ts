@@ -155,6 +155,10 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
    */
   @throttle(1000)
   private async fetchLoads() {
+    if (!this.online) {
+      debug("RLB offline. Skip fetching loads");
+      return;
+    }
     const keys = await this.redis.keys(`${this.redisPrefix}:*`);
     if (!keys.length) {
       // mget 需要至少一个参数
