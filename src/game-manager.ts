@@ -105,10 +105,12 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
 
   private createNewMasterClient(id = generateId()) {
     const masterClient = new Play();
+    const env = process.env.LEANCLOUD_APP_ENV;
     masterClient.init({
       appId: this.appId,
       appKey: this.appKey,
       region: Region.NorthChina,
+      ssl: env !== "production" && env !== "staging",
     });
     masterClient.userId = id;
     return masterClient;
