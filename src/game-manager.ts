@@ -26,6 +26,7 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
   }
   private queue: PQueue;
   private reservationHoldTime: number;
+  private region: Region;
 
   constructor(
     private gameClass: IGameConstructor<T>,
@@ -36,6 +37,7 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
       concurrency = 1,
       // 匹配成功后座位的保留时间，超过这个时间后该座位将被释放。
       reservationHoldTime = 10000,
+      region = Region.NorthChina,
     } = {},
     ) {
     super();
@@ -43,6 +45,7 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
       concurrency,
     });
     this.reservationHoldTime = reservationHoldTime;
+    this.region = region;
   }
 
   public getLoad() {
@@ -109,7 +112,7 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
     masterClient.init({
       appId: this.appId,
       appKey: this.appKey,
-      region: Region.NorthChina,
+      region: this.region,
       ssl: env !== "production" && env !== "staging",
     });
     masterClient.userId = id;
