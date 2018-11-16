@@ -203,7 +203,6 @@ export abstract class GameManager<T extends Game> extends EventEmitter {
         flag:
           // tslint:disable-next-line:no-bitwise
           CreateRoomFlag.FixedMaster |
-          CreateRoomFlag.MasterSetMaster |
           CreateRoomFlag.MasterUpdateRoomProperties,
         maxPlayerCount: seatCount + 1, // masterClient should be included
       },
