@@ -8,9 +8,9 @@ import { generateId } from "./utils";
 
 const debug = d("RLB");
 
-export interface IConsumer<T, U> extends EventEmitter {
-  getLoad(): number;
-  consume(params: T): Promise<U>;
+export interface IConsumer<T extends any[], U> extends EventEmitter {
+  load: number;
+  consume(...params: T): Promise<U>;
   close(): Promise<any>;
 }
 
@@ -19,7 +19,7 @@ export interface IConsumer<T, U> extends EventEmitter {
  * 每个客户端都需要负责接受请求与处理请求。
  * 请求会被转发给负载最低的实例处理。
  */
-export class RedisLoadBalancer<T, U> extends EventEmitter {
+export class RedisLoadBalancer<T extends any[], U> extends EventEmitter {
   /**
    * 标记是否在线。在离线状态下，客户端会直接处理收到的请求。
    */
@@ -83,7 +83,7 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
 
     this.redisPRCNode = new RedisPRCNode(
       this.id,
-      (params) => this.consumer.consume(params),
+      (params) => this.consumer.consume(...params),
       redisUrl,
       {
         poolId,
@@ -108,22 +108,22 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
   /**
    * 处理请求
    */
-  public async consume(params: T) {
+  public async consume(...params: T) {
     if (!this.open) {
       throw new Error("RedisLoadBalancer closed.");
     }
     if (!this.online) {
       // offline 时，直接将请求转发给 local consumer
       debug("offline. consume locally.");
-      return this.consumer.consume(params);
+      return this.consumer.consume(...params);
     } else {
       // 找到负载最低的实例
       const [instanceId, load] = await this.getLowestLoadInfo();
-      const localLoad = this.consumer.getLoad();
+      const localLoad = this.consumer.load;
       debug("current load %O, remote loads: %O", localLoad, this.loads);
       if (load === localLoad) {
         // 自己就是负载最低的实例
-        return this.consumer.consume(params);
+        return this.consumer.consume(...params);
       }
       try {
         return await this.redisPRCNode.call(instanceId, params);
@@ -133,7 +133,7 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
             error.message
           }. Fallback to local consumer`,
         );
-        return this.consumer.consume(params);
+        return this.consumer.consume(...params);
       }
     }
   }
@@ -144,7 +144,7 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
    */
   private async getLowestLoadInfo() {
     await this.fetchLoads();
-    const loads = { ...this.loads, [this.id]: this.consumer.getLoad() };
+    const loads = { ...this.loads, [this.id]: this.consumer.load };
     return _(loads)
       .toPairs()
       .minBy(([id, load]) => load)!;
@@ -183,7 +183,7 @@ export class RedisLoadBalancer<T, U> extends EventEmitter {
       return;
     }
     if (this.online) {
-      const load = this.consumer.getLoad();
+      const { load } = this.consumer;
       debug(`report load: ${load}`);
       await this.redis.set(
         this.redisKey,

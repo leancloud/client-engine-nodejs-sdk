@@ -24,10 +24,9 @@ export function watchRoomFull() {
       }
 
       private watchPlayers() {
-        const playerJoinedHandler = ({ newPlayer }: { newPlayer: Player }) => {
+        const playerJoinedHandler = () => {
           if (
-            this.players.length ===
-            (this.constructor as typeof Game).playerLimit
+            this.room.playerList.length === this.room.maxPlayerCount
           ) {
             debug(`Room [${this.room.name}] is full`);
             this.emit(AutomaticGameEvent.ROOM_FULL);

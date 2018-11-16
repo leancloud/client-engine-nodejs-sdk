@@ -3,35 +3,62 @@ import d = require("debug");
 import { EventEmitter } from "events";
 import PQueue = require("p-queue");
 import { Game, GameEvent } from "./game";
-import { IConsumer, RedisLoadBalancerConsumerEvent } from "./redis-load-balancer";
+import { RedisLoadBalancerConsumerEvent } from "./redis-load-balancer";
 import { generateId, listen } from "./utils";
 
 const debug = d("ClientEngine:GameManager");
 
 interface IGameConstructor<T extends Game> {
-  playerLimit: number;
+  maxSeatCount: number;
+  minSeatCount: number;
   new(room: Room, masterClient: Play, ...args: any[]): T;
+}
+
+/**
+ * 创建 Room 时的选项，
+ * 是 {@link https://leancloud.github.io/Play-SDK-JS/doc/Play.html#createRoom Play SDK 中 createRoom 方法}
+ * 的 `roomOptions` 参数的一个子集。
+ */
+export interface IRoomOptions {
+  visible?: boolean;
+  customRoomProperties?: {[key: string]: any};
+  customRoomPropertyKeysForLobby?: string[];
+}
+
+/**
+ * 创建游戏时的选项
+ */
+export interface ICreateGameOptions {
+  /** 游戏房间席位数量（不包含 masterClient） */
+  seatCount?: number;
+  /** 房间名字 */
+  roomName?: string;
+  /** 房间选项 */
+  roomOptions?: IRoomOptions;
 }
 
 /**
  * GameManager 负责游戏房间的分配
  */
-export class GameManager<T extends Game> extends EventEmitter implements IConsumer<string, string> {
-  public open = true;
-  private games = new Set<T>();
-  private get availableGames() {
+export abstract class GameManager<T extends Game> extends EventEmitter {
+  protected get availableGames() {
     return Array.from(this.games).filter(
       (game) => game.room.opened && game.availableSeatCount !== 0,
     );
   }
-  private queue: PQueue;
-  private reservationHoldTime: number;
-  private region: Region;
+  public get load() {
+    return this.games.size;
+  }
+  public open = true;
+  protected games = new Set<T>();
+  protected queue: PQueue;
+  protected reservationHoldTime: number;
+  protected region: Region;
 
   constructor(
-    private gameClass: IGameConstructor<T>,
-    private appId: string,
-    private appKey: string,
+    protected gameClass: IGameConstructor<T>,
+    protected appId: string,
+    protected appKey: string,
     {
       // 创建游戏的并发数
       concurrency = 1,
@@ -39,17 +66,13 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
       reservationHoldTime = 10000,
       region = Region.NorthChina,
     } = {},
-    ) {
+  ) {
     super();
     this.queue = new PQueue({
       concurrency,
     });
     this.reservationHoldTime = reservationHoldTime;
     this.region = region;
-  }
-
-  public getLoad() {
-    return this.games.size;
   }
 
   public async getStatus() {
@@ -70,17 +93,28 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
         registeredPlayers: Array.from(registeredPlayers.values()),
         visible,
       })),
-      load: this.getLoad(),
+      load: this.load,
       open: this.open,
       queue: this.queue.size,
     };
   }
 
-  public async consume(playerId: string) {
-    return this.makeReservation(playerId);
+  public abstract async consume(...args: any[]): Promise<any>;
+
+  public async close() {
+    // 停止接受新的请求
+    this.open = false;
+    // 等待所有游戏结束
+    return Promise.all(Array.from(this.games).map((game) => game.terminate()));
   }
 
-  public async makeReservation(playerId: string) {
+  /**
+   * 为指定玩家预约游戏，如果没有可用的游戏会创建一个新的游戏。
+   * @param playerId 预约的玩家 ID
+   * @param createGameOptions 如果没有可用游戏，创建新游戏时可以指定的一些配置项
+   * @return 预约成功的游戏的房间 name
+   */
+  protected async makeReservation(playerId: string, createGameOptions?: ICreateGameOptions) {
     if (!this.open) {
       throw new Error("GameManager closed.");
     }
@@ -90,7 +124,7 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
       game = availableGames[0];
     } else {
       debug(`No game available, creating a new one`);
-      game = await this.queue.add(() => this.createNewGame());
+      game = await this.queue.add(() => this.createNewGame(createGameOptions));
       this.addGame(game);
       game.once(GameEvent.END, () => this.remove(game));
     }
@@ -99,14 +133,11 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
     return game.room.name;
   }
 
-  public async close() {
-    // 停止接受新的请求
-    this.open = false;
-    // 等待所有游戏结束
-    return Promise.all(Array.from(this.games).map((game) => game.terminate()));
-  }
-
-  private createNewMasterClient(id = generateId()) {
+  /**
+   * 创建一个新的 masterClient
+   * @param id 指定 masterClient id
+   */
+  protected createNewMasterClient(id = generateId()) {
     const masterClient = new Play();
     const env = process.env.LEANCLOUD_APP_ENV;
     masterClient.init({
@@ -119,12 +150,12 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
     return masterClient;
   }
 
-  private addGame(game: T) {
+  protected addGame(game: T) {
     this.games.add(game);
     this.emit(RedisLoadBalancerConsumerEvent.LOAD_CHANGE);
   }
 
-  private reserveSeats(game: T, playerId: string) {
+  protected reserveSeats(game: T, playerId: string) {
     const { availableSeatCount } = game;
     if (availableSeatCount <= 0) {
       // 这种情况不应该出现
@@ -141,28 +172,48 @@ export class GameManager<T extends Game> extends EventEmitter implements IConsum
     }, this.reservationHoldTime);
   }
 
-  private async createNewGame() {
+  /**
+   * 创建新游戏
+   * @param options 可以指定席位数量、房间名与房间选项等配置
+   */
+  protected async createNewGame(options: ICreateGameOptions = {}) {
+    const {
+      seatCount = this.gameClass.maxSeatCount,
+      roomName,
+      roomOptions,
+    } = options;
+    const {
+      gameClass,
+    } = this;
+    if (seatCount > gameClass.maxSeatCount) {
+      throw new Error(`seatCount too large. The maxSeatCount is ${gameClass.maxSeatCount}`);
+    }
+    if (seatCount < gameClass.minSeatCount) {
+      throw new Error(`seatCount too small. The minSeatCount is ${gameClass.minSeatCount}`);
+    }
     const masterClient = this.createNewMasterClient();
     masterClient.connect();
     await listen(masterClient, Event.CONNECTED, Event.CONNECT_FAILED);
     debug(`New master client online: ${masterClient.userId}`);
     masterClient.createRoom({
+      roomName,
       roomOptions: {
+        visible: true,
+        ...roomOptions,
         flag:
           // tslint:disable-next-line:no-bitwise
           CreateRoomFlag.FixedMaster |
           CreateRoomFlag.MasterSetMaster |
           CreateRoomFlag.MasterUpdateRoomProperties,
-        maxPlayerCount: this.gameClass.playerLimit + 1, // masterClient should be included
-        visible: true,
+        maxPlayerCount: seatCount + 1, // masterClient should be included
       },
     });
     return listen(masterClient, Event.ROOM_CREATED, Event.ROOM_CREATE_FAILED).then(
-      () => new this.gameClass(masterClient.room, masterClient),
+      () => new gameClass(masterClient.room, masterClient),
     );
   }
 
-  private remove(game: T) {
+  protected remove(game: T) {
     debug(`Removing [${game.room.name}].`);
     this.games.delete(game);
     this.emit(RedisLoadBalancerConsumerEvent.LOAD_CHANGE);

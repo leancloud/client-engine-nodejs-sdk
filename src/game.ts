@@ -26,7 +26,7 @@ interface ICustomEventPayload {
 export abstract class Game extends EventEmitter {
   public get availableSeatCount() {
     return (
-      (this.constructor as typeof Game).playerLimit -
+      this.room.maxPlayerCount -
       this.players.length -
       this.registeredPlayers.size
     );
@@ -41,9 +41,13 @@ export abstract class Game extends EventEmitter {
     );
   }
   /**
-   * 每局游戏玩家数量限制。
+   * 每局游戏房间的最大空位数量。
    */
-  public static playerLimit = 2;
+  public static maxSeatCount = 2;
+  /**
+   * 每局游戏房间的最小空位数量。
+   */
+  public static minSeatCount = 2;
 
   public registeredPlayers = new Set<string>();
 
