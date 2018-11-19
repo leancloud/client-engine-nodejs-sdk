@@ -81,8 +81,9 @@ export abstract class GameManager<T extends Game> extends EventEmitter {
       availableGames: this.availableGames.map((game) => game.room.name),
       games: Array.from(this.games).map(({
         room: {
-          name, master, visible,
+          name, master, visible, opened,
         },
+        seatCount,
         availableSeatCount,
         registeredPlayers,
         players,
@@ -90,8 +91,10 @@ export abstract class GameManager<T extends Game> extends EventEmitter {
         availableSeatCount,
         master: master.userId,
         name,
+        opened,
         players: players.map((player) => player.userId),
         registeredPlayers: Array.from(registeredPlayers.values()),
+        seatCount,
         visible,
       })),
       load: this.load,
