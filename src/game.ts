@@ -26,7 +26,7 @@ interface ICustomEventPayload {
 export abstract class Game extends EventEmitter {
   public get availableSeatCount() {
     return (
-      this.room.maxPlayerCount -
+      this.seatCount -
       this.players.length -
       this.registeredPlayers.size
     );
@@ -40,14 +40,25 @@ export abstract class Game extends EventEmitter {
       (player) => player !== this.masterClient.player,
     );
   }
+
+  /**
+   * 游戏房间的空位数量
+   */
+  public get seatCount() {
+    return this.room.maxPlayerCount - 1;
+  }
+  /**
+   * 每局游戏房间的默认空位数量。
+   */
+  public static defaultSeatCount = 2;
   /**
    * 每局游戏房间的最大空位数量。
    */
-  public static maxSeatCount = 2;
+  public static maxSeatCount = undefined;
   /**
    * 每局游戏房间的最小空位数量。
    */
-  public static minSeatCount = 2;
+  public static minSeatCount = undefined;
 
   public registeredPlayers = new Set<string>();
 

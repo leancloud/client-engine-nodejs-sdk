@@ -9,8 +9,9 @@ import { generateId, listen } from "./utils";
 const debug = d("ClientEngine:GameManager");
 
 interface IGameConstructor<T extends Game> {
-  maxSeatCount: number;
-  minSeatCount: number;
+  defaultSeatCount: number;
+  maxSeatCount?: number;
+  minSeatCount?: number;
   new(room: Room, masterClient: Play, ...args: any[]): T;
 }
 
@@ -178,17 +179,17 @@ export abstract class GameManager<T extends Game> extends EventEmitter {
    */
   protected async createNewGame(options: ICreateGameOptions = {}) {
     const {
-      seatCount = this.gameClass.maxSeatCount,
+      seatCount = this.gameClass.defaultSeatCount,
       roomName,
       roomOptions,
     } = options;
     const {
       gameClass,
     } = this;
-    if (seatCount > gameClass.maxSeatCount) {
+    if (gameClass.maxSeatCount && seatCount > gameClass.maxSeatCount) {
       throw new Error(`seatCount too large. The maxSeatCount is ${gameClass.maxSeatCount}`);
     }
-    if (seatCount < gameClass.minSeatCount) {
+    if (gameClass.minSeatCount && seatCount < gameClass.minSeatCount) {
       throw new Error(`seatCount too small. The minSeatCount is ${gameClass.minSeatCount}`);
     }
     const masterClient = this.createNewMasterClient();
