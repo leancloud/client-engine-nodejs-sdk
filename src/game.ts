@@ -54,11 +54,11 @@ export abstract class Game extends EventEmitter {
   /**
    * 每局游戏房间的最大空位数量。
    */
-  public static maxSeatCount = undefined;
+  public static maxSeatCount?: number;
   /**
    * 每局游戏房间的最小空位数量。
    */
-  public static minSeatCount = undefined;
+  public static minSeatCount?: number;
 
   public registeredPlayers = new Set<string>();
 
