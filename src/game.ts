@@ -16,12 +16,8 @@ import { listenNodeEE } from "./utils";
 
 const debug = d("ClientEngine:Game");
 
-type CustomEventId = number | string;
-interface ICustomEventPayload {
-  eventId: CustomEventId;
-  eventData: CustomEventData;
-  senderId: number;
-}
+type CustomEventPayload = PlayEvent[Event.CUSTOM_EVENT];
+type CustomEventId = CustomEventPayload["eventId"];
 
 export abstract class Game extends EventEmitter {
   public get availableSeatCount() {
@@ -65,7 +61,7 @@ export abstract class Game extends EventEmitter {
   /**
    * customEvents Observable
    */
-  protected customEvents = fromEvent<PlayEvent[Event.CUSTOM_EVENT]>(
+  protected customEvents = fromEvent<CustomEventPayload>(
     this.masterClient,
     Event.CUSTOM_EVENT,
   );
@@ -134,7 +130,7 @@ export abstract class Game extends EventEmitter {
    * @param eventId 指定新的事件 ID
    */
   protected forwardToTheRests(
-    originalEvent: ICustomEventPayload,
+    originalEvent: CustomEventPayload,
     transform: (originalEventData: CustomEventData) => CustomEventData = (data) => data,
     eventId: CustomEventId = originalEvent.eventId,
   ) {
