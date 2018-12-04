@@ -3,7 +3,7 @@ import d = require("debug");
 import { EventEmitter } from "events";
 import PQueue = require("p-queue");
 import { Game, GameEvent } from "./game";
-import { RedisLoadBalancerConsumerEvent } from "./redis-load-balancer";
+import { LoadBalancerConsumerEvent } from "./load-balancer";
 import { generateId, listen } from "./utils";
 
 const debug = d("ClientEngine:GameManager");
@@ -41,7 +41,7 @@ export interface ICreateGameOptions {
 /**
  * GameManager 负责游戏房间的分配
  */
-export abstract class GameManager<T extends Game> extends EventEmitter {
+export class GameManager<T extends Game> extends EventEmitter {
   protected get availableGames() {
     return Array.from(this.games).filter(
       (game) => game.room.opened && game.availableSeatCount !== 0,
@@ -103,8 +103,6 @@ export abstract class GameManager<T extends Game> extends EventEmitter {
     };
   }
 
-  public abstract async consume(...args: any[]): Promise<any>;
-
   public async close() {
     // 停止接受新的请求
     this.open = false;
@@ -118,7 +116,7 @@ export abstract class GameManager<T extends Game> extends EventEmitter {
    * @param createGameOptions 如果没有可用游戏，创建新游戏时可以指定的一些配置项
    * @return 预约成功的游戏的房间 name
    */
-  protected async makeReservation(playerId: string, createGameOptions?: ICreateGameOptions) {
+  public async makeReservation(playerId: string, createGameOptions?: ICreateGameOptions) {
     if (!this.open) {
       throw new Error("GameManager closed.");
     }
@@ -156,7 +154,8 @@ export abstract class GameManager<T extends Game> extends EventEmitter {
 
   protected addGame(game: T) {
     this.games.add(game);
-    this.emit(RedisLoadBalancerConsumerEvent.LOAD_CHANGE);
+    debug(`Load: ${this.load}`);
+    this.emit(LoadBalancerConsumerEvent.LOAD_CHANGE);
   }
 
   protected reserveSeats(game: T, playerId: string) {
@@ -219,6 +218,6 @@ export abstract class GameManager<T extends Game> extends EventEmitter {
   protected remove(game: T) {
     debug(`Removing [${game.room.name}].`);
     this.games.delete(game);
-    this.emit(RedisLoadBalancerConsumerEvent.LOAD_CHANGE);
+    this.emit(LoadBalancerConsumerEvent.LOAD_CHANGE);
   }
 }

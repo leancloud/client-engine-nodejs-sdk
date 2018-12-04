@@ -19,7 +19,7 @@ export interface IConsumer<T extends any[], U> extends EventEmitter {
  * 每个客户端都需要负责接受请求与处理请求。
  * 请求会被转发给负载最低的实例处理。
  */
-export class RedisLoadBalancer<T extends any[], U> extends EventEmitter {
+export class LoadBalancer<T extends any[], U> extends EventEmitter {
   /**
    * 标记是否在线。在离线状态下，客户端会直接处理收到的请求。
    */
@@ -48,13 +48,13 @@ export class RedisLoadBalancer<T extends any[], U> extends EventEmitter {
   private redisPRCNode: RedisPRCNode<T, U>;
 
   /**
-   * @param consumer 负责处理请求的消费者实例，consumer 通过派发 LOAD_CHANGE 事件通知 RedisLoadBalancer 其负载的变化。
+   * @param consumer 负责处理请求的消费者实例，consumer 通过派发 LOAD_CHANGE 事件通知 LoadBalancer 其负载的变化。
    * @param redisUrl
-   * @param poolId consumer 池的标识，用于不同的 RedisLoadBalancer 共享一个 Redis。
+   * @param poolId consumer 池的标识，用于不同的 LoadBalancer 共享一个 Redis。
    * @param reportInterval 上报本地 consumer load 时间间隔，单位毫秒。
    */
   constructor(
-    private consumer: IConsumer<T, U>,
+    protected consumer: IConsumer<T, U>,
     redisUrl?: string,
     { poolId = "global", reportInterval = 30000 } = {},
   ) {
@@ -79,7 +79,7 @@ export class RedisLoadBalancer<T extends any[], U> extends EventEmitter {
 
     this.reportInterval = reportInterval;
 
-    consumer.on(RedisLoadBalancerConsumerEvent.LOAD_CHANGE, () => this.reportLoad());
+    consumer.on(LoadBalancerConsumerEvent.LOAD_CHANGE, () => this.reportLoad());
 
     this.redisPRCNode = new RedisPRCNode(
       this.id,
@@ -110,7 +110,7 @@ export class RedisLoadBalancer<T extends any[], U> extends EventEmitter {
    */
   public async consume(...params: T) {
     if (!this.open) {
-      throw new Error("RedisLoadBalancer closed.");
+      throw new Error("LoadBalancer closed.");
     }
     if (!this.online) {
       // offline 时，直接将请求转发给 local consumer
@@ -206,6 +206,6 @@ export class RedisLoadBalancer<T extends any[], U> extends EventEmitter {
 
 }
 
-export const RedisLoadBalancerConsumerEvent = {
+export const LoadBalancerConsumerEvent = {
   LOAD_CHANGE: Symbol("LOAD_CHANGE"),
 };

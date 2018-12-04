@@ -1,10 +1,27 @@
 import d = require("debug");
 import * as Redis from "ioredis";
+import _ = require("lodash");
 import { fromEvent, Observable } from "rxjs";
 import { filter, first, map, timeout as rxTimeout } from "rxjs/operators";
 import { generateId } from "./utils";
 
 const debug = d("RLB:RPC");
+
+const RedisUndefined = "__RLB_undefined";
+const replace = (object: any, prevVal: any, newVal: any) => {
+  if (object === prevVal) {
+    return newVal;
+  }
+  const newObject = _.clone(object);
+  if (_.isArray(newObject) || _.isPlainObject(newObject)) {
+    _.each(object, (val, key) => {
+      newObject[key] = replace(val, prevVal, newVal);
+    });
+  }
+  return newObject;
+};
+const encodeUndefined = _.bind(replace, _, _, undefined, RedisUndefined);
+const decodeUndefined = _.bind(replace, _, _, RedisUndefined, undefined);
 
 interface IPubSubMessage<T> {
   id: string;
@@ -54,7 +71,7 @@ export default class RedisPRCNode<T, U> {
     ).pipe(
       map(
         ([channel, message]) =>
-          [channel, JSON.parse(message)] as [string, IPubSubMessage<T | U>],
+          [channel, decodeUndefined(JSON.parse(message))] as [string, IPubSubMessage<T | U>],
       ),
     );
     this.subClientMessageStream.subscribe(debug);
@@ -83,7 +100,7 @@ export default class RedisPRCNode<T, U> {
     debug(`call ${nodeId}:`, message);
     const recievedClientsNumber = await this.pubClient.publish(
       `${this.channelPrefix}:${nodeId}`,
-      JSON.stringify(message),
+      JSON.stringify(encodeUndefined(message)),
     );
     debug(`${recievedClientsNumber} clients recieved`);
     if (recievedClientsNumber === 0) {
@@ -115,7 +132,7 @@ export default class RedisPRCNode<T, U> {
     };
     const recievedClientsNumber = await this.pubClient.publish(
       `${this.channelPrefix}:${caller}:result`,
-      JSON.stringify(responseMessage),
+      JSON.stringify(encodeUndefined(responseMessage)),
     );
     debug(`${recievedClientsNumber} clients recieved`);
   }

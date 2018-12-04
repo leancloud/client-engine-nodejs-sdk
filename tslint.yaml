@@ -4,3 +4,6 @@ rules:
   no-console:
     - true
     - "log"
+  trailing-comma:
+    - true
+    - esSpecCompliant: true
