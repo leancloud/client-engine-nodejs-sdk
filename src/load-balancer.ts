@@ -8,7 +8,7 @@ import { generateId } from "./utils";
 
 const debug = d("RLB");
 
-export interface IConsumer<T extends any[], U> extends EventEmitter {
+export interface ILoadBalancerConsumer<T extends any[], U> extends EventEmitter {
   load: number;
   consume(...params: T): Promise<U>;
   close(): Promise<any>;
@@ -50,11 +50,11 @@ export class LoadBalancer<T extends any[], U> extends EventEmitter {
   /**
    * @param consumer 负责处理请求的消费者实例，consumer 通过派发 LOAD_CHANGE 事件通知 LoadBalancer 其负载的变化。
    * @param redisUrl
-   * @param poolId consumer 池的标识，用于不同的 LoadBalancer 共享一个 Redis。
+   * @param poolId LoadBalancer 资源池的标识，同样 poolId LoadBalancer 之间是隔离的。用于在一个 Redis 中运行多个 LoadBalancer。
    * @param reportInterval 上报本地 consumer load 时间间隔，单位毫秒。
    */
   constructor(
-    protected consumer: IConsumer<T, U>,
+    protected consumer: ILoadBalancerConsumer<T, U>,
     redisUrl?: string,
     { poolId = "global", reportInterval = 30000 } = {},
   ) {

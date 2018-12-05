@@ -7,7 +7,7 @@ import {
 
 const { LOAD_CHANGE } = LoadBalancerConsumerEvent;
 
-interface IOriginalConsumer extends EventEmitter {
+export interface ILoadBalancerFactoryBindingTarget extends EventEmitter {
   [key: string]: any;
   load: number;
   close(): Promise<any>;
@@ -16,42 +16,56 @@ interface IOriginalConsumer extends EventEmitter {
 class ProxiedConsumer extends EventEmitter {
   public originalMethods = new Map();
 
-  constructor(protected originalConsumer: IOriginalConsumer) {
+  constructor(protected target: ILoadBalancerFactoryBindingTarget) {
     super();
     this.on(LOAD_CHANGE, (...args: any[]) => this.emit(LOAD_CHANGE, ...args));
   }
 
   get load() {
-    return this.originalConsumer.load;
+    return this.target.load;
   }
 
   public consume(methodName: string, ...params: any[]) {
     const originalMethod = this.originalMethods.get(methodName);
     if (typeof originalMethod === "function") {
-      return originalMethod.call(this.originalConsumer, ...params);
+      return originalMethod.call(this.target, ...params);
     }
   }
 
   public close() {
-    return this.originalConsumer.close();
+    return this.target.close();
   }
 }
 
 interface ILoadBalancerOptions {
   redisUrl?: string;
+  /** LoadBalancer 资源池的标识，同样 poolId LoadBalancer 之间是隔离的。用于在一个 Redis 中运行多个 LoadBalancer。 */
   poolId?: string;
+  /** 上报本地 consumer load 时间间隔，单位毫秒。 */
   reportInterval?: number;
 }
 
+/**
+ * LoadBalancer 工厂，用于给指定对象包装 LoadBalancer。
+ */
 export class LoadBalancerFactory {
   protected loadBalancers: Array<LoadBalancer<[string, ...any[]], any>> = [];
 
+  /**
+   * @param options 创建新的 LoadBalancer 时使用的参数，该参数可以在 bind 的时候覆盖。
+   */
   constructor(
     private options: ILoadBalancerOptions = {},
   ) {}
 
+  /**
+   * 绑定一个对象，创建一个与该对象绑定的 LoadBalancer，对该对象上指定方法的调用会被自动转到合适的 LoadBalancer 节点执行。
+   * @param target 指定的对象
+   * @param proxiedMethodNames 需要委托的方法名
+   * @param options 创建新的 LoadBalancer 时使用的参数
+   */
   public bind(
-    target: IOriginalConsumer,
+    target: ILoadBalancerFactoryBindingTarget,
     proxiedMethodNames: string[],
     options: ILoadBalancerOptions = {},
   ) {
@@ -87,6 +101,9 @@ export class LoadBalancerFactory {
     return Promise.all(this.loadBalancers.map((balancer) => balancer.getStatus()));
   }
 
+  /**
+   * 关闭该 LoadBalancer 工厂生成的所有 LoadBalancer
+   */
   public close() {
     return Promise.all(this.loadBalancers.map((balancer) => balancer.close()));
   }
