@@ -2,11 +2,17 @@ import { EventEmitter as PlayEventEmitter, PlayEvent } from "@leancloud/play";
 import { EventEmitter } from "events";
 import generate = require("nanoid/generate");
 
-export function listen<T extends PlayEvent, K extends keyof T, L extends keyof T>(
-  target: PlayEventEmitter<T>,
-  resolveEvent: K,
-  rejectEvent?: L,
-) {
+class WrappedPlayError extends Error {
+  constructor(message: string, public code?: number) {
+    super(message);
+  }
+}
+
+export function listen<
+  T extends PlayEvent,
+  K extends keyof T,
+  L extends keyof T
+>(target: PlayEventEmitter<T>, resolveEvent: K, rejectEvent?: L) {
   return new Promise<T[K]>((resolve, reject) => {
     let rejectCallback: (error: T[L]) => any;
     const resolveCallback = (payload: T[K]) => {
@@ -22,7 +28,15 @@ export function listen<T extends PlayEvent, K extends keyof T, L extends keyof T
         if (error instanceof Error) {
           reject(error);
         } else {
-          reject(new Error((error as any).detail || JSON.stringify(error)));
+          const {
+            detail,
+            code,
+          } = error as any;
+          const wrappedError = new WrappedPlayError(detail || JSON.stringify(error));
+          if (code) {
+            wrappedError.code = code;
+          }
+          reject(wrappedError);
         }
       };
       target.once(rejectEvent, rejectCallback);
@@ -33,7 +47,7 @@ export function listen<T extends PlayEvent, K extends keyof T, L extends keyof T
 export function listenNodeEE<T>(
   target: EventEmitter,
   resolveEvent: string | symbol,
-  rejectEvent?: string | symbol,
+  rejectEvent?: string | symbol
 ) {
   return new Promise<T>((resolve, reject) => {
     let rejectCallback: (error: Error) => any;
