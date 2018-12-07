@@ -111,35 +111,38 @@ export class GameManager<T extends Game> extends EventEmitter {
   }
 
   /**
-   * 为指定玩家预约游戏，如果没有可用的游戏会创建一个新的游戏。
-   * @param playerId 预约的玩家 ID
-   * @param createGameOptions 如果没有可用游戏，创建新游戏时可以指定的一些配置项
-   * @return 预约成功的游戏的房间 name
+   * 获取可用的游戏列表
+   * @param availableSeatCount 可用空位数量，只返回大于这个数量的游戏
    */
-  public async makeReservation(playerId: string, createGameOptions?: ICreateGameOptions) {
+  public getAvailableGames(availableSeatCount = 1) {
     if (!this.open) {
       throw new Error("GameManager closed.");
     }
-    let game: T;
-    const { availableGames } = this;
-    if (availableGames.length > 0) {
-      game = availableGames[0];
-    } else {
-      debug(`No game available, creating a new one`);
-      game = await this.queue.add(() => this.createNewGame(createGameOptions));
-      this.addGame(game);
-      game.once(GameEvent.END, () => this.remove(game));
+    return this.availableGames.filter((game) => game.availableSeatCount >= availableSeatCount);
+  }
+
+  /**
+   * 创建一个新的游戏。
+   * @param playerId 预留位置的的玩家 ID
+   * @param options 配置项，详见其类型说明
+   */
+  public async createGame(playerId: string, options?: ICreateGameOptions) {
+    if (!this.open) {
+      throw new Error("GameManager closed.");
     }
+    debug(`Creating a new game`);
+    const game = await this.queue.add(() => this.createEmptyGame(options));
+    this.addGame(game);
+    game.once(GameEvent.END, () => this.remove(game));
     this.reserveSeats(game, playerId);
-    debug(`Reservation completed: %o`, game.room.name);
-    return game.room.name;
+    return game;
   }
 
   /**
    * 创建一个新的 masterClient
    * @param id 指定 masterClient id
    */
-  protected createNewMasterClient(id = generateId()) {
+  protected createMasterClient(id = generateId()) {
     const masterClient = new Play();
     const env = process.env.LEANCLOUD_APP_ENV;
     masterClient.init({
@@ -179,7 +182,7 @@ export class GameManager<T extends Game> extends EventEmitter {
    * 创建新游戏
    * @param options 可以指定席位数量、房间名与房间选项等配置
    */
-  protected async createNewGame(options: ICreateGameOptions = {}) {
+  protected async createEmptyGame(options: ICreateGameOptions = {}) {
     const {
       seatCount = this.gameClass.defaultSeatCount,
       roomName,
@@ -194,7 +197,7 @@ export class GameManager<T extends Game> extends EventEmitter {
     if (gameClass.minSeatCount && seatCount < gameClass.minSeatCount) {
       throw new Error(`seatCount too small. The minSeatCount is ${gameClass.minSeatCount}`);
     }
-    const masterClient = this.createNewMasterClient();
+    const masterClient = this.createMasterClient();
     masterClient.connect();
     await listen(masterClient, Event.CONNECTED, Event.CONNECT_FAILED);
     debug(`New master client online: ${masterClient.userId}`);
