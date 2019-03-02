@@ -42,7 +42,7 @@
     "p-queue": "^3.0.0"
   },
   "peerDependencies": {
-    "@leancloud/play": "^0.14.0",
+    "@leancloud/play": "^0.17.0",
     "rxjs": "^6.3.3"
   }
 }

@@ -1,4 +1,4 @@
-import { CreateRoomFlag, Event, Play, Region, Room } from "@leancloud/play";
+import { Client, CreateRoomFlag, Event, Region, Room } from "@leancloud/play";
 import d = require("debug");
 import { EventEmitter } from "events";
 import PQueue = require("p-queue");
@@ -12,7 +12,7 @@ interface IGameConstructor<T extends Game> {
   defaultSeatCount: number;
   maxSeatCount?: number;
   minSeatCount?: number;
-  new(room: Room, masterClient: Play, ...args: any[]): T;
+  new(room: Room, masterClient: Client, ...args: any[]): T;
 }
 
 /**
@@ -143,15 +143,14 @@ export class GameManager<T extends Game> extends EventEmitter {
    * @param id 指定 masterClient id
    */
   protected createMasterClient(id = generateId()) {
-    const masterClient = new Play();
     const env = process.env.LEANCLOUD_APP_ENV;
-    masterClient.init({
+    const masterClient = new Client({
       appId: this.appId,
       appKey: this.appKey,
       region: this.region,
       ssl: env !== "production" && env !== "staging",
+      userId: id,
     });
-    masterClient.userId = id;
     return masterClient;
   }
 

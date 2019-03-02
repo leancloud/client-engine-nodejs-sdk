@@ -1,7 +1,7 @@
 import {
+  Client,
   CustomEventData,
   Event,
-  Play,
   Player,
   PlayEvent,
   ReceiverGroup,
@@ -66,7 +66,7 @@ export abstract class Game extends EventEmitter {
     Event.CUSTOM_EVENT,
   );
 
-  constructor(public room: Room, public masterClient: Play) {
+  constructor(public room: Room, public masterClient: Client) {
     super();
     masterClient.on(Event.PLAYER_ROOM_JOINED, ({ newPlayer }: { newPlayer: Player }) => {
       if (this.registeredPlayers.has(newPlayer.userId)) {
