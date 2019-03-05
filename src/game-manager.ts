@@ -36,6 +36,8 @@ export interface ICreateGameOptions {
   roomName?: string;
   /** 房间选项 */
   roomOptions?: IRoomOptions;
+  /** 队员id */
+  expectedUserIds?: string[];
 }
 
 /**
@@ -183,6 +185,7 @@ export class GameManager<T extends Game> extends EventEmitter {
    */
   protected async createEmptyGame(options: ICreateGameOptions = {}) {
     const {
+      expectedUserIds,
       seatCount = this.gameClass.defaultSeatCount,
       roomName,
       roomOptions,
@@ -201,6 +204,7 @@ export class GameManager<T extends Game> extends EventEmitter {
     await listen(masterClient, Event.CONNECTED, Event.CONNECT_FAILED);
     debug(`New master client online: ${masterClient.userId}`);
     masterClient.createRoom({
+      expectedUserIds,
       roomName,
       roomOptions: {
         visible: true,
