@@ -39,7 +39,7 @@ export default class RedisPRCNode<T, U> {
   private channelPrefix: string;
   private subChannel: string;
 
-  private subClientMessageStream: Observable<[string, IPubSubMessage<T | U>]>;
+  private subClientMessage$: Observable<[string, IPubSubMessage<T | U>]>;
 
   /**
    * @param id 节点的唯一标识
@@ -65,7 +65,7 @@ export default class RedisPRCNode<T, U> {
     this.channelPrefix = `RLB:RPC:${poolId}`;
     this.subChannel = `${this.channelPrefix}:${id}`;
     this.subClient.subscribe([this.subChannel, `${this.subChannel}:result`]);
-    this.subClientMessageStream = fromEvent<[string, string]>(
+    this.subClientMessage$ = fromEvent<[string, string]>(
       this.subClient,
       "message",
     ).pipe(
@@ -74,8 +74,8 @@ export default class RedisPRCNode<T, U> {
           [channel, decodeUndefined(JSON.parse(message))] as [string, IPubSubMessage<T | U>],
       ),
     );
-    this.subClientMessageStream.subscribe(debug);
-    this.subClientMessageStream
+    this.subClientMessage$.subscribe(debug);
+    this.subClientMessage$
       .pipe(filter(([channel]) => channel === this.subChannel))
       .pipe(map(([channel, message]) => message as IPubSubMessage<T>))
       .subscribe(this.handleRPCCall);
@@ -106,7 +106,7 @@ export default class RedisPRCNode<T, U> {
     if (recievedClientsNumber === 0) {
       throw new Error("Target node does not exist");
     }
-    return this.subClientMessageStream
+    return this.subClientMessage$
     .pipe(
       filter(
         ([channel, incomingMessage]) =>

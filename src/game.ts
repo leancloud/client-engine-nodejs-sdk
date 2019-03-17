@@ -61,7 +61,7 @@ export abstract class Game extends EventEmitter {
   /**
    * customEvents Observable
    */
-  protected customEvents = fromEvent<CustomEventPayload>(
+  protected customEvent$ = fromEvent<CustomEventPayload>(
     this.masterClient,
     Event.CUSTOM_EVENT,
   );
@@ -73,7 +73,7 @@ export abstract class Game extends EventEmitter {
         this.registeredPlayers.delete(newPlayer.userId);
       }
     });
-    this.customEvents.subscribe(debug);
+    this.customEvent$.subscribe(debug);
   }
 
   public makeReservation(playerId: string) {
@@ -155,7 +155,7 @@ export abstract class Game extends EventEmitter {
    * 参阅 http://reactivex.io/rxjs 了解更多。
    */
   protected getStream(eventId?: CustomEventId, player?: Player, timeout?: number) {
-    return this.customEvents.pipe(
+    return this.customEvent$.pipe(
       eventId === undefined ? tap() : filter(({ eventId: evId }) => evId === eventId),
       player === undefined ? tap() : filter(({ senderId }) => senderId === player.actorId),
       timeout === undefined ? tap() : takeUntil(timer(timeout)),
