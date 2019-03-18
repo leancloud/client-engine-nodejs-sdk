@@ -171,7 +171,7 @@ export abstract class Game extends EventEmitter {
   }
 
   protected destroy() {
-    this.masterClient.disconnect();
+    this.masterClient.close();
     this.emit(GameEvent.END);
   }
 }

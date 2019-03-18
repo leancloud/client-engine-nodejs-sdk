@@ -1,10 +1,10 @@
-import { Client, CreateRoomFlag, Event, Region, Room } from "@leancloud/play";
+import { Client, CreateRoomFlag, Event, Room } from "@leancloud/play";
 import d = require("debug");
 import { EventEmitter } from "events";
 import PQueue = require("p-queue");
 import { Game, GameEvent } from "./game";
 import { LoadBalancerConsumerEvent } from "./load-balancer";
-import { generateId, listen } from "./utils";
+import { generateId } from "./utils";
 
 const debug = d("ClientEngine:GameManager");
 
@@ -56,7 +56,6 @@ export class GameManager<T extends Game> extends EventEmitter {
   protected games = new Set<T>();
   protected queue: PQueue;
   protected reservationHoldTime: number;
-  protected region: Region;
 
   constructor(
     protected gameClass: IGameConstructor<T>,
@@ -67,7 +66,6 @@ export class GameManager<T extends Game> extends EventEmitter {
       concurrency = 1,
       // 匹配成功后座位的保留时间，超过这个时间后该座位将被释放。
       reservationHoldTime = 10000,
-      region = Region.NorthChina,
     } = {},
   ) {
     super();
@@ -75,7 +73,6 @@ export class GameManager<T extends Game> extends EventEmitter {
       concurrency,
     });
     this.reservationHoldTime = reservationHoldTime;
-    this.region = region;
   }
 
   public async getStatus() {
@@ -149,7 +146,6 @@ export class GameManager<T extends Game> extends EventEmitter {
     const masterClient = new Client({
       appId: this.appId,
       appKey: this.appKey,
-      region: this.region,
       ssl: env !== "production" && env !== "staging",
       userId: id,
     });
@@ -200,10 +196,9 @@ export class GameManager<T extends Game> extends EventEmitter {
       throw new Error(`seatCount too small. The minSeatCount is ${gameClass.minSeatCount}`);
     }
     const masterClient = this.createMasterClient();
-    masterClient.connect();
-    await listen(masterClient, Event.CONNECTED, Event.CONNECT_FAILED);
+    await masterClient.connect();
     debug(`New master client online: ${masterClient.userId}`);
-    masterClient.createRoom({
+    const room = await masterClient.createRoom({
       expectedUserIds,
       roomName,
       roomOptions: {
@@ -216,9 +211,7 @@ export class GameManager<T extends Game> extends EventEmitter {
         maxPlayerCount: seatCount + 1, // masterClient should be included
       },
     });
-    return listen(masterClient, Event.ROOM_CREATED, Event.ROOM_CREATE_FAILED).then(
-      () => new gameClass(masterClient.room, masterClient),
-    );
+    return new gameClass(room, masterClient);
   }
 
   protected remove(game: T) {
