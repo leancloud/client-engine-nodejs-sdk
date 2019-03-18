@@ -1,7 +1,7 @@
 import { Client, CreateRoomFlag, Event, Room } from "@leancloud/play";
 import d = require("debug");
 import { EventEmitter } from "events";
-import PQueue = require("p-queue");
+import PQueue from "p-queue";
 import { Game, GameEvent } from "./game";
 import { LoadBalancerConsumerEvent } from "./load-balancer";
 import { generateId } from "./utils";

@@ -16,7 +16,7 @@ export const AutomaticGameEvent = {
  * @returns a Game decorator
  */
 export function watchRoomFull() {
-  return <T extends { new (...args: any[]): Game }>(gameClass: T) => {
+  return <T extends new (...args: any[]) => Game>(gameClass: T) => {
     return class extends gameClass {
       constructor(...params: any[]) {
         super(...params);
@@ -49,7 +49,7 @@ export function watchRoomFull() {
  * @returns a Game decorator
  */
 export function autoDestroy({ checkInterval = 10000 } = {}) {
-  return <T extends { new (...args: any[]): Game }>(gameClass: T) => {
+  return <T extends new (...args: any[]) => Game>(gameClass: T) => {
     return class AutoDestroyGame extends gameClass {
       private static killerTimer = interval(checkInterval);
 
