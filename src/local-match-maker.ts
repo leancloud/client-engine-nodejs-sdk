@@ -1,4 +1,5 @@
 import d = require("debug");
+import sift, { SiftQuery } from "sift";
 import { Game } from "./game";
 import { IMatchMaker, MatchErrorCode } from "./match-maker";
 
@@ -19,20 +20,26 @@ export class LocalMatchMaker<T extends Game> implements IMatchMaker {
    * 获取可用的游戏列表
    * @param availableSeatCount 可用空位数量，只返回大于这个数量的游戏
    */
-  public getAvailableGames(availableSeatCount = 1) {
-    return Array.from(this.games).filter(
-      (game) => game.room.opened && game.availableSeatCount >= availableSeatCount
-    );
+  public getAvailableGames(
+    availableSeatCount = 1,
+    roomQuery: SiftQuery<{ [index: string]: any }> = {}
+  ) {
+    return Array.from(this.games)
+      .filter(
+        (game) =>
+          game.room.opened && game.availableSeatCount >= availableSeatCount
+      )
+      .filter((game) => sift(roomQuery)(game.room.customProperties));
   }
   public async match(
     playerIds: string[],
-    roomProperties?: {
+    roomQuery?: {
       [key: string]: any;
     }
   ) {
-    debug(`match for %o with conditions %o`, playerIds, roomProperties);
+    debug(`match for %o with conditions %o`, playerIds, roomQuery);
     const playerCount = playerIds.length;
-    const availableGames = this.getAvailableGames(playerCount);
+    const availableGames = this.getAvailableGames(playerCount, roomQuery);
     const game = availableGames[0];
     if (!game) {
       debug(`No game matches for %o`, playerIds);
@@ -44,6 +51,7 @@ export class LocalMatchMaker<T extends Game> implements IMatchMaker {
     return name;
   }
   public async reserveSeats(playerIds: string[], roomName: string) {
+    debug(`Reserve seats for %o: %s`, playerIds, roomName);
     const game = Array.from(this.games).find((g) => g.room.name === roomName);
     if (!game) {
       return;

@@ -78,13 +78,14 @@ export class GameManager<T extends Game> extends EventEmitter {
     return {
       games: Array.from(this.games).map(
         ({
-          room: { name, master, visible, opened },
+          room: { name, master, visible, opened, customProperties },
           seatCount,
           availableSeatCount,
           registeredPlayers,
           players
         }) => ({
           availableSeatCount,
+          customProperties,
           master: master.userId,
           name,
           opened,
@@ -113,11 +114,11 @@ export class GameManager<T extends Game> extends EventEmitter {
 
   public async match(
     playerIds: string[],
-    roomProperties?: {
+    roomQuery?: {
       [key: string]: any;
     }
   ) {
-    return this.matchMaker.match(playerIds, roomProperties);
+    return this.matchMaker.match(playerIds, roomQuery);
   }
 
   /**
@@ -129,7 +130,7 @@ export class GameManager<T extends Game> extends EventEmitter {
     if (!this.open) {
       throw new Error("GameManager closed.");
     }
-    debug(`Creating a new game`);
+    debug(`Creating a new game with options %o`, options);
     const game = await this.queue.add(() => this.createEmptyGame(options));
     this.addGame(game);
     game.once(GameEvent.END, () => this.remove(game));
