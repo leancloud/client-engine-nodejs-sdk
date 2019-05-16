@@ -1,4 +1,4 @@
-import { EventEmitter as PlayEventEmitter, PlayEvent } from "@leancloud/play";
+import { Client, EventEmitter as PlayEventEmitter, PlayEvent } from "@leancloud/play";
 import { EventEmitter } from "events";
 import generate = require("nanoid/generate");
 
@@ -71,3 +71,14 @@ export function listenNodeEE<T>(
 const alphabet =
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 export const generateId = (length = 10) => generate(alphabet, length);
+
+export const createClient = (appId: string, appKey: string, clientId = generateId()) => {
+  const env = process.env.LEANCLOUD_APP_ENV;
+  const masterClient = new Client({
+    appId,
+    appKey,
+    ssl: env !== "production" && env !== "staging",
+    userId: clientId,
+  });
+  return masterClient;
+};
