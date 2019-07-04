@@ -7,7 +7,9 @@
     "lint": "tslint src/*",
     "lint:fix": "tslint src/* --fix",
     "build": "tsc --build tsconfig.json",
-    "docs": "typedoc src/index.ts --out docs --mode file --theme minimal"
+    "docs": "typedoc src/index.ts --out docs --mode file --theme minimal",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "repository": {
     "type": "git",
@@ -39,10 +41,12 @@
     "lodash-decorators": "^6.0.1",
     "nanoid": "^2.0.1",
     "p-queue": "^4.0.0",
-    "sift": "^8.3.3"
+    "sift": "^8.3.3",
+    "snyk": "^1.189.0"
   },
   "peerDependencies": {
     "@leancloud/play": "^0.18.0-beta.0",
     "rxjs": "^6.4.0"
-  }
+  },
+  "snyk": true
 }
