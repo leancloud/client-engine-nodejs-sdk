@@ -42,7 +42,7 @@
     "sift": "^8.3.3"
   },
   "peerDependencies": {
-    "@leancloud/play": "^0.18.0-beta.0",
+    "@leancloud/play": "^0.18.0-beta.8",
     "rxjs": "^6.4.0"
   }
 }

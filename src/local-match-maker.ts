@@ -27,7 +27,7 @@ export class LocalMatchMaker<T extends Game> implements IMatchMaker {
     return Array.from(this.games)
       .filter(
         (game) =>
-          game.room.opened && game.availableSeatCount >= availableSeatCount
+          game.room.open && game.availableSeatCount >= availableSeatCount
       )
       .filter((game) => sift(roomQuery)(game.room.customProperties));
   }
