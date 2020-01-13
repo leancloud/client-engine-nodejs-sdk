@@ -64,7 +64,7 @@ export default class RedisPRCNode<T, U> {
 
     this.channelPrefix = `RLB:RPC:${poolId}`;
     this.subChannel = `${this.channelPrefix}:${id}`;
-    this.subClient.subscribe([this.subChannel, `${this.subChannel}:result`]);
+    this.subClient.subscribe(this.subChannel, `${this.subChannel}:result`);
     this.subClientMessage$ = fromEvent<[string, string]>(
       this.subClient,
       "message",

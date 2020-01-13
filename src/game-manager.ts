@@ -46,7 +46,7 @@ export interface ICreateGameOptions {
 export class GameManager<T extends Game> extends EventEmitter {
   protected get availableGames() {
     return Array.from(this.games).filter(
-      (game) => game.room.opened && game.availableSeatCount !== 0,
+      (game) => game.room.open && game.availableSeatCount !== 0,
     );
   }
   public get load() {
@@ -80,7 +80,7 @@ export class GameManager<T extends Game> extends EventEmitter {
       availableGames: this.availableGames.map((game) => game.room.name),
       games: Array.from(this.games).map(({
         room: {
-          name, master, visible, opened,
+          name, master, visible, open,
         },
         seatCount,
         availableSeatCount,
@@ -90,7 +90,7 @@ export class GameManager<T extends Game> extends EventEmitter {
         availableSeatCount,
         master: master.userId,
         name,
-        opened,
+        open,
         players: players.map((player) => player.userId),
         registeredPlayers: Array.from(registeredPlayers.values()),
         seatCount,
@@ -111,7 +111,7 @@ export class GameManager<T extends Game> extends EventEmitter {
 
   /**
    * 获取可用的游戏列表
-   * @param availableSeatCount 可用空位数量，只返回大于这个数量的游戏
+   * @param availableSeatCount 可用空位数量，只返回大于等于这个数量的游戏
    */
   public getAvailableGames(availableSeatCount = 1) {
     if (!this.open) {
