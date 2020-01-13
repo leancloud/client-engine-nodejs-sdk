@@ -7,7 +7,7 @@
     "lint": "tslint src/*",
     "lint:fix": "tslint src/* --fix",
     "build": "tsc --build tsconfig.json",
-    "docs": "typedoc src/index.ts --out docs --mode file --theme minimal"
+    "docs": "typedoc src/index.ts --out docs --mode modules --theme minimal"
   },
   "repository": {
     "type": "git",
@@ -29,7 +29,7 @@
     "@types/lodash": "^4.14.149",
     "@types/nanoid": "^1.2.1",
     "tslint": "^5.20.1",
-    "typedoc": "^0.13.0",
+    "typedoc": "^0.16.2",
     "typescript": "^3.7.4"
   },
   "dependencies": {
