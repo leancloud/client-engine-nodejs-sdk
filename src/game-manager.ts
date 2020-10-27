@@ -1,4 +1,4 @@
-import { Client, CreateRoomFlag, Event, Room } from "@leancloud/play";
+import { Client, CreateRoomFlag, Room } from "@leancloud/play";
 import d = require("debug");
 import { EventEmitter } from "events";
 import PQueue from "p-queue";
@@ -40,6 +40,17 @@ export interface ICreateGameOptions {
   expectedUserIds?: string[];
 }
 
+interface IGameManagerConfig<T extends Game> {
+  gameClass: IGameConstructor<T>;
+  appId: string;
+  appKey: string;
+  playServer?: string;
+  /** 创建游戏的并发数 */
+  concurrency?: number;
+  /** 匹配成功后座位的保留时间，超过这个时间后该座位将被释放 */
+  reservationHoldTime?: number;
+}
+
 /**
  * GameManager 负责游戏房间的分配
  */
@@ -53,22 +64,27 @@ export class GameManager<T extends Game> extends EventEmitter {
     return this.games.size;
   }
   public open = true;
+  protected gameClass: IGameConstructor<T>;
+  protected appId: string;
+  protected appKey: string;
+  protected playServer: string | undefined;
   protected games = new Set<T>();
   protected queue: PQueue;
   protected reservationHoldTime: number;
 
-  constructor(
-    protected gameClass: IGameConstructor<T>,
-    protected appId: string,
-    protected appKey: string,
-    {
-      // 创建游戏的并发数
-      concurrency = 1,
-      // 匹配成功后座位的保留时间，超过这个时间后该座位将被释放。
-      reservationHoldTime = 10000,
-    } = {},
-  ) {
+  constructor({
+    gameClass,
+    appId,
+    appKey,
+    playServer,
+    concurrency = 1,
+    reservationHoldTime = 10000,
+  }: IGameManagerConfig<T>) {
     super();
+    this.gameClass = gameClass;
+    this.appId = appId;
+    this.appKey = appKey;
+    this.playServer = playServer;
     this.queue = new PQueue({
       concurrency,
     });
@@ -146,6 +162,7 @@ export class GameManager<T extends Game> extends EventEmitter {
     const masterClient = new Client({
       appId: this.appId,
       appKey: this.appKey,
+      playServer: this.playServer,
       ssl: env !== "production" && env !== "staging",
       userId: id,
     });
