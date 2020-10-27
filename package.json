@@ -7,7 +7,7 @@
     "lint": "tslint src/*",
     "lint:fix": "tslint src/* --fix",
     "build": "tsc --build tsconfig.json",
-    "docs": "typedoc src/index.ts --out docs --mode modules --theme minimal && touch docs/.nojekyll"
+    "docs": "typedoc src/index.ts --out docs --mode modules --theme minimal"
   },
   "repository": {
     "type": "git",
