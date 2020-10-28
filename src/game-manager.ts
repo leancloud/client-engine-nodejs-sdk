@@ -1,4 +1,4 @@
-import { Client, CreateRoomFlag, Event, Room } from "@leancloud/play";
+import { Client, CreateRoomFlag, Room } from "@leancloud/play";
 import d = require("debug");
 import { EventEmitter } from "events";
 import PQueue from "p-queue";
@@ -40,6 +40,17 @@ export interface ICreateGameOptions {
   expectedUserIds?: string[];
 }
 
+interface IGameManagerConfig<T extends Game> {
+  gameConstructor: IGameConstructor<T>;
+  appId: string;
+  appKey: string;
+  playServer?: string;
+  /** 创建游戏的并发数 */
+  concurrency?: number;
+  /** 匹配成功后座位的保留时间，超过这个时间后该座位将被释放 */
+  reservationHoldTime?: number;
+}
+
 /**
  * GameManager 负责游戏房间的分配
  */
@@ -53,22 +64,27 @@ export class GameManager<T extends Game> extends EventEmitter {
     return this.games.size;
   }
   public open = true;
+  protected gameConstructor: IGameConstructor<T>;
+  protected appId: string;
+  protected appKey: string;
+  protected playServer: string | undefined;
   protected games = new Set<T>();
   protected queue: PQueue;
   protected reservationHoldTime: number;
 
-  constructor(
-    protected gameClass: IGameConstructor<T>,
-    protected appId: string,
-    protected appKey: string,
-    {
-      // 创建游戏的并发数
-      concurrency = 1,
-      // 匹配成功后座位的保留时间，超过这个时间后该座位将被释放。
-      reservationHoldTime = 10000,
-    } = {},
-  ) {
+  constructor({
+    gameConstructor,
+    appId,
+    appKey,
+    playServer,
+    concurrency = 1,
+    reservationHoldTime = 10000,
+  }: IGameManagerConfig<T>) {
     super();
+    this.gameConstructor = gameConstructor;
+    this.appId = appId;
+    this.appKey = appKey;
+    this.playServer = playServer;
     this.queue = new PQueue({
       concurrency,
     });
@@ -146,6 +162,7 @@ export class GameManager<T extends Game> extends EventEmitter {
     const masterClient = new Client({
       appId: this.appId,
       appKey: this.appKey,
+      playServer: this.playServer,
       ssl: env !== "production" && env !== "staging",
       userId: id,
     });
@@ -182,18 +199,18 @@ export class GameManager<T extends Game> extends EventEmitter {
   protected async createEmptyGame(options: ICreateGameOptions = {}) {
     const {
       expectedUserIds,
-      seatCount = this.gameClass.defaultSeatCount,
+      seatCount = this.gameConstructor.defaultSeatCount,
       roomName,
       roomOptions,
     } = options;
     const {
-      gameClass,
+      gameConstructor,
     } = this;
-    if (gameClass.maxSeatCount && seatCount > gameClass.maxSeatCount) {
-      throw new Error(`seatCount too large. The maxSeatCount is ${gameClass.maxSeatCount}`);
+    if (gameConstructor.maxSeatCount && seatCount > gameConstructor.maxSeatCount) {
+      throw new Error(`seatCount too large. The maxSeatCount is ${gameConstructor.maxSeatCount}`);
     }
-    if (gameClass.minSeatCount && seatCount < gameClass.minSeatCount) {
-      throw new Error(`seatCount too small. The minSeatCount is ${gameClass.minSeatCount}`);
+    if (gameConstructor.minSeatCount && seatCount < gameConstructor.minSeatCount) {
+      throw new Error(`seatCount too small. The minSeatCount is ${gameConstructor.minSeatCount}`);
     }
     const masterClient = this.createMasterClient();
     await masterClient.connect();
@@ -211,7 +228,7 @@ export class GameManager<T extends Game> extends EventEmitter {
         maxPlayerCount: seatCount + 1, // masterClient should be included
       },
     });
-    return new gameClass(room, masterClient);
+    return new gameConstructor(room, masterClient);
   }
 
   protected remove(game: T) {
