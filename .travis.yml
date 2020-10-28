@@ -7,7 +7,7 @@ script:
   - npm run lint
   - npm run build
   - npm run docs
-after_script:
+after_success:
   - touch docs/.nojekyll
 deploy:
   - provider: pages
