@@ -43,5 +43,8 @@
   "peerDependencies": {
     "@leancloud/play": "^1.0.0",
     "rxjs": "^6.5.4"
-  }
+  },
+  "files": [
+    "build/"
+  ]
 }
