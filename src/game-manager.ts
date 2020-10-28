@@ -41,7 +41,7 @@ export interface ICreateGameOptions {
 }
 
 interface IGameManagerConfig<T extends Game> {
-  gameClass: IGameConstructor<T>;
+  gameConstructor: IGameConstructor<T>;
   appId: string;
   appKey: string;
   playServer?: string;
@@ -64,7 +64,7 @@ export class GameManager<T extends Game> extends EventEmitter {
     return this.games.size;
   }
   public open = true;
-  protected gameClass: IGameConstructor<T>;
+  protected gameConstructor: IGameConstructor<T>;
   protected appId: string;
   protected appKey: string;
   protected playServer: string | undefined;
@@ -73,7 +73,7 @@ export class GameManager<T extends Game> extends EventEmitter {
   protected reservationHoldTime: number;
 
   constructor({
-    gameClass,
+    gameConstructor,
     appId,
     appKey,
     playServer,
@@ -81,7 +81,7 @@ export class GameManager<T extends Game> extends EventEmitter {
     reservationHoldTime = 10000,
   }: IGameManagerConfig<T>) {
     super();
-    this.gameClass = gameClass;
+    this.gameConstructor = gameConstructor;
     this.appId = appId;
     this.appKey = appKey;
     this.playServer = playServer;
@@ -199,18 +199,18 @@ export class GameManager<T extends Game> extends EventEmitter {
   protected async createEmptyGame(options: ICreateGameOptions = {}) {
     const {
       expectedUserIds,
-      seatCount = this.gameClass.defaultSeatCount,
+      seatCount = this.gameConstructor.defaultSeatCount,
       roomName,
       roomOptions,
     } = options;
     const {
-      gameClass,
+      gameConstructor,
     } = this;
-    if (gameClass.maxSeatCount && seatCount > gameClass.maxSeatCount) {
-      throw new Error(`seatCount too large. The maxSeatCount is ${gameClass.maxSeatCount}`);
+    if (gameConstructor.maxSeatCount && seatCount > gameConstructor.maxSeatCount) {
+      throw new Error(`seatCount too large. The maxSeatCount is ${gameConstructor.maxSeatCount}`);
     }
-    if (gameClass.minSeatCount && seatCount < gameClass.minSeatCount) {
-      throw new Error(`seatCount too small. The minSeatCount is ${gameClass.minSeatCount}`);
+    if (gameConstructor.minSeatCount && seatCount < gameConstructor.minSeatCount) {
+      throw new Error(`seatCount too small. The minSeatCount is ${gameConstructor.minSeatCount}`);
     }
     const masterClient = this.createMasterClient();
     await masterClient.connect();
@@ -228,7 +228,7 @@ export class GameManager<T extends Game> extends EventEmitter {
         maxPlayerCount: seatCount + 1, // masterClient should be included
       },
     });
-    return new gameClass(room, masterClient);
+    return new gameConstructor(room, masterClient);
   }
 
   protected remove(game: T) {
