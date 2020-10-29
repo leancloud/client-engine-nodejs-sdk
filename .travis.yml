@@ -16,7 +16,7 @@ deploy:
     local-dir: './docs'
     skip_cleanup: true
     on:
-      tags: true
+      tags: false
   - provider: npm
     email: "lee55962698@gmail.com"
     api_key: 
