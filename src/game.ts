@@ -102,6 +102,12 @@ export abstract class Game extends EventEmitter {
     ]);
   }
 
+  public destroy() {
+    // TODO: 直接调用 gameInstance.masterClient.close() 时不会触发 END 事件
+    this.masterClient.close();
+    this.emit(GameEvent.END);
+  }
+
   /**
    * 向玩家广播自定义事件。
    */
@@ -168,11 +174,6 @@ export abstract class Game extends EventEmitter {
    */
   protected takeFirst(eventId?: CustomEventId, player?: Player, timeout?: number) {
     return this.getStream(eventId, player, timeout).pipe(first());
-  }
-
-  protected destroy() {
-    this.masterClient.close();
-    this.emit(GameEvent.END);
   }
 }
 

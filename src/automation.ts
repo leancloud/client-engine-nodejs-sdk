@@ -55,11 +55,15 @@ export function autoDestroy({ checkInterval = 10000 } = {}) {
 
       constructor(...params: any[]) {
         super(...params);
+        const roomIsEmpty = () => {
+          if (!this.masterClient.room) {
+            return true;
+          }
+          return this.players.length + this.registeredPlayers.size === 0;
+        };
         AutoDestroyGame.killerTimer
           .pipe(
-            filter(
-              () => this.players.length + this.registeredPlayers.size === 0,
-            ),
+            filter(roomIsEmpty),
             take(2),
           )
           .toPromise()
