@@ -1,6 +1,6 @@
 {
   "name": "@leancloud/client-engine",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Node.js SDK for LeanCloud ClientEngine",
   "main": "build/index.js",
   "scripts": {
